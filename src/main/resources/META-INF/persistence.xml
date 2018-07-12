@@ -8,7 +8,7 @@
     <jta-data-source>jdbc/batchDB</jta-data-source> <!-- java:comp/env/jdbc/batchDB, jdbc/BonusPayoutDS, ${db.url}  -->
     <non-jta-data-source>jdbc/batchDB</non-jta-data-source>
 
-   <class>persistence</class> <!-- try this!? --> 
+   <class>persistence.AccountEntity</class>  
     <exclude-unlisted-classes>false</exclude-unlisted-classes>    <!-- originally true -->
     <properties>
       <!-- These properties are creating the database on the fly. We are using them to avoid users having
