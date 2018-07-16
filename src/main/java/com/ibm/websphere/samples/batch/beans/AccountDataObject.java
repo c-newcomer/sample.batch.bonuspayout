@@ -16,12 +16,45 @@
  */
 package com.ibm.websphere.samples.batch.beans;
 
-public class AccountDataObject {
+import java.io.Serializable;
 
-    private int accountNumber;
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
+import javax.persistence.EmbeddedId;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.IdClass;
+import javax.persistence.Transient;
+
+@Entity
+@IdClass(AccountId.class)
+@Table(name = "ACCOUNT", schema = "BONUSPAYOUT")
+public class AccountDataObject {
+    private static final long serialVersionUID = 1L;
+
+    @Column(name = "BALANCE", nullable = false)
     private int balance;
+
+    @Column(name = "ACCTCODE")
     private String accountCode;
+
+    @Column(name = "ACCTNUM", nullable = false)
+    @Id
+    private int accountNumber;
+
+    @Column(name = "INSTANCEID", nullable = false)
+    @Id
+    private long instanceId;
+
+    // private AccountId accountId = new AccountId();
+    @Transient
     private AccountDataObject compareToDataObject;
+
+    public AccountDataObject() {
+    }
 
     /**
      * @param accountNumber
@@ -30,9 +63,10 @@ public class AccountDataObject {
      */
     public AccountDataObject(int accountNumber, int balance, String accountCode) {
         super();
-        this.accountNumber = accountNumber;
         this.balance = balance;
         this.accountCode = accountCode;
+        this.accountNumber = accountNumber;
+
     }
 
     /**
@@ -75,6 +109,14 @@ public class AccountDataObject {
      */
     public void setAccountCode(String accountCode) {
         this.accountCode = accountCode;
+    }
+
+    public long getInstanceID() {
+        return this.instanceId;
+    }
+
+    public void setInstanceId(long newInstanceId) {
+        this.instanceId = newInstanceId;
     }
 
     /**
