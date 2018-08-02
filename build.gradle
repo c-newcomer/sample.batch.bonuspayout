@@ -1,0 +1,173 @@
+// gradle clean build --info
+
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'liberty'
+apply plugin: 'war' 
+
+group = 'net.wasdev.wlp.sample'
+version = '2.0-SNAPSHOT'
+
+description = "WAS Liberty Sample - Batch BonusPayout Sample"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.wasdev.wlp.gradle.plugins:liberty-gradle-plugin:2.4'
+    }
+}
+
+repositories {
+         mavenCentral() 
+}
+
+configurations{
+     derby { transitive = true }
+        driver // 
+}
+
+
+ext {
+    warName =  'BonusPayout-1.0'
+    baseName = 'BonusPayout-1.0' // roll into one thing at some point
+    extension = 'war'
+    httpPort = 9080
+    httpsPort = 9443 
+    // wlp.install.dir = "${projectDir}/target/liberty/wlp"
+    // batch.props.directory = "${projectDir}/batchprops"
+    serverHost =  "localhost"
+    // Liberty server properties 
+    wlpServerName = 'LibertyProjectServer'
+    serverDirectory = "${project.buildDir}/wlp/usr/servers/${wlpServerName}"
+    testServerHttpPort = 9080
+    testServerHttpsPort = 9443
+    warContext = 'BonusPayout-1.0'  //'jpaApp'
+
+}
+
+war {
+    archiveName =  baseName + '.' + extension
+}
+
+
+liberty {
+    server{
+        configFile = file("src/main/liberty/config/server.xml")
+        bootstrapProperties = ['default.http.port': "${testServerHttpPort}" , 'default.https.port': "${testServerHttpsPort}", 'appContext': "${warContext}",'appLocation': "${war.archiveName}"]
+        name = 'LibertyProjectServer'
+        apps = [war]
+        features {
+            name = ['servlet-3.1', 'jdbc-4.1', 'jpa-2.0', 'localConnector-1.0', 'batchManagement-1.0', 'cdi-1.2', 'appsecurity-2.0']
+            acceptLicense = true
+        }
+     }
+}
+
+dependencies {
+    testCompile group: 'commons-httpclient', name: 'commons-httpclient', version:'3.1'
+    testCompile group: 'junit', name: 'junit', version:'4.12'
+    testCompile group: 'net.sf.expectit', name: 'expectit-core', version:'0.8.0'
+    providedCompile group: 'javax', name: 'javaee-api', version:'7.0'
+    // from liberty sample
+    providedCompile group: 'javax.persistence', name: 'persistence-api', version:'1.0.2'
+    providedCompile group: 'javax.transaction', name: 'javax.transaction-api', version:'1.2'
+    providedCompile group: 'javax.servlet', name: 'javax.servlet-api', version:'3.1.0'
+    testCompile group: 'org.apache.cxf', name: 'cxf-rt-rs-client', version:'3.1.1'
+    testCompile group: 'org.glassfish', name: 'javax.json', version:'1.0.4'
+    derby group: 'org.apache.derby', name: 'derby', version: '10.13.1.1'
+    libertyRuntime group: 'com.ibm.websphere.appserver.runtime', name: 'wlp-kernel', version: '17.0.0.2'
+
+    // jdbc
+    driver 'org.xerial:sqlite-jdbc:3.20.1' // or org.apache.derby.jdbc.EmbeddedDriver ??
+
+}
+
+test {
+    systemProperty 'warName', "${warName}"
+    systemProperty 'wlp.install.dir', "${projectDir}/target/liberty/wlp"
+    systemProperty 'batch.props.directory', "${projectDir}/batchprops"
+    systemProperty 'serverHost', "${serverHost}"
+    systemProperty 'httpPort', "${httpPort}"
+    systemProperty 'httpsPort', "${httpsPort}"
+    testLogging.showStandardStreams = true
+    // from liberty jpa
+    // println 'inside the test block'
+    // reports.html.destination = file("$buildDir/reports/unit")
+    // reports.junitXml.destination = file("$buildDir/test-results/unit")
+    exclude '**/it/**'
+}
+
+task copyDerby {
+    doLast {
+        copy {
+            from configurations.derby
+            into "$buildDir/wlp/usr/shared/resources"
+            include '*.jar'
+        }
+    }
+}
+
+// task integrationTest(type: Test) {
+//     group 'Verification'
+//     description 'Runs the integration tests.'
+//     reports.html.destination = file("$buildDir/reports/it")
+//     reports.junitXml.destination = file("$buildDir/test-results/it")
+//     include '**/it/**'
+//     exclude '**/unit/**'
+//     systemProperties = ['liberty.test.port': testServerHttpPort, 'war.context': warContext]
+// }
+
+task printMessageAboutRunningServer {
+    doLast {
+        println "The server is now running at http://localhost:${testServerHttpPort}/${warContext}"
+        println "To stop the server run 'gradle libertyStop'"
+    }
+}
+task createTables {
+
+    // <driver>org.apache.derby.jdbc.EmbeddedDriver</driver>
+    // <url>jdbc:derby:${db.url};create=true</url>
+    // <phase>pre-integration-test</phase>
+    // <goal>execute</goal>
+
+// 1. drop table BONUSPAYOUT.ACCOUNT
+    // <configuration>
+    //     <autocommit>true</autocommit>
+    //     <sqlCommand>drop table BONUSPAYOUT.ACCOUNT</sqlCommand>
+    //     <onError>continue</onError>
+    //     <skip>${reuseDB}</skip>
+    // </configuration>
+
+//  2. create tables 
+
+    // <configuration>
+    //     <autocommit>true</autocommit>
+    //     <srcFiles>
+    //         <srcFile>${ddl.dir}/BonusPayout.derby.ddl</srcFile>
+    //     </srcFiles>
+    //     <skip>${reuseDB}</skip>
+    // </configuration>
+
+//  3. shutdown database so that test can run 
+
+    // <configuration>
+    //     <url>jdbc:derby:${db.url};shutdown=true</url>
+    //     <skipOnConnectionError>true</skipOnConnectionError>
+    // </configuration>
+
+}
+
+// check.dependsOn 'test'
+libertyCreate.finalizedBy 'copyDerby', 'installFeature'
+test.dependsOn 'libertyStart', 'testClasses'
+test.finalizedBy 'libertyStop'
+libertyStart.finalizedBy 'printMessageAboutRunningServer'
